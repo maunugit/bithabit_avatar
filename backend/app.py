@@ -6,11 +6,14 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from openai import OpenAI
 from elevenlabs.client import ElevenLabs, VoiceSettings
-
+import os;
+from dotenv import load_dotenv
 logging.basicConfig(level=logging.DEBUG)
 
 app = Flask(__name__)
 CORS(app)
+load_dotenv()
+
 
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY")
@@ -18,6 +21,7 @@ ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY")
 if not OPENAI_API_KEY:
     raise RuntimeError("OPENAI_API_KEY is not set in the environment variables")
 if not ELEVENLABS_API_KEY:
+    print(os.getenv('ELEVENLABS_API_KEY'))
     raise RuntimeError("ELEVENLABS_API_KEY is not set in the environment variables")
 
 openai_client = OpenAI(api_key=OPENAI_API_KEY)
@@ -93,3 +97,4 @@ def index():
 if __name__ == '__main__':
     print("Starting the server on port 3000...")
     app.run(port=3000, debug=True)
+    

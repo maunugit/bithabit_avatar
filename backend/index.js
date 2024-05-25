@@ -5,6 +5,7 @@ import voice from "elevenlabs-node";
 import express from "express";
 import { promises as fs } from "fs";
 import OpenAI from "openai";
+
 dotenv.config();
 
 const openai = new OpenAI({
@@ -17,7 +18,7 @@ const voiceID = "kgG7dCoKCfLehAPWkJOE";
 const app = express();
 app.use(express.json());
 app.use(cors());
-const port = 3000;
+const port = 4000;
 
 app.get("/", (req, res) => {
   res.send("Hello World!");
@@ -150,5 +151,15 @@ const audioFileToBase64 = async (file) => {
 };
 
 app.listen(port, () => {
-  console.log(`Virtual Girlfriend listening on port ${port}`);
+  console.log(`Bithabit Assistant listening on port ${port}`);
 });
+
+
+app.use(express.json());
+
+app.post('/message', (req, res) => {
+    const { message } = req.body;
+    console.log('Received message:', message);
+    res.json({ reply: `Server received: ${message}` });
+});
+
