@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useState } from "react";
 
 const backendUrl = "http://localhost:3000";
 
@@ -9,9 +9,16 @@ export const ChatProvider = ({ children }) => {
   const [message, setMessage] = useState();
   const [loading, setLoading] = useState(false);
   const [cameraZoomed, setCameraZoomed] = useState(true);
+  const [selectedLanguage, setSelectedLanguage] = useState("en-US");
 
   const chat = async (userMessage) => {
     setLoading(true);
+    // Add the user's message to the messages state
+    setMessages((previousMessages) => [
+      ...previousMessages,
+      { text: userMessage, author: 'user' },
+    ]);
+
     try {
       const response = await fetch(`${backendUrl}/message`, {
         method: "POST",
@@ -56,6 +63,27 @@ export const ChatProvider = ({ children }) => {
     }
   };
 
+  const startVoiceRecognition = () => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      console.error('Speech recognition is not supported in this browser.');
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = selectedLanguage;
+    recognition.start();
+
+    recognition.onresult = function(event) {
+      const transcript = event.results[0][0].transcript;
+      chat(transcript); // use transcript as input and submit
+    };
+
+    recognition.onerror = function(event) {
+      console.error('Speech recognition error', event.error);
+    };
+  };
+
   useEffect(() => {
     if (messages.length > 0) {
       setMessage(messages[messages.length - 1]);
@@ -76,6 +104,9 @@ export const ChatProvider = ({ children }) => {
         setLoading,
         cameraZoomed,
         setCameraZoomed,
+        startVoiceRecognition,
+        selectedLanguage,
+        setSelectedLanguage,
       }}
     >
       {children}
