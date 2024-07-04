@@ -10,8 +10,83 @@ export const ChatProvider = ({ children }) => {
   const [loading, setLoading] = useState(false);
   const [cameraZoomed, setCameraZoomed] = useState(true);
   const [selectedLanguage, setSelectedLanguage] = useState("en-US");
+  const [threadId, setThreadId] = useState(null);
+  const [threads, setThreads] = useState([]);
+
+  // Start a new thread when the component mounts
+  // useEffect(() => {
+  //   const startThread = async () => {
+  //     try {
+  //       const response = await fetch(`${backendUrl}/start`, {
+  //         method: "POST",
+  //       });
+
+  //       if (!response.ok) {
+  //         throw new Error(`HTTP status ${response.status}`);
+  //       }
+
+  //       const jsonResponse = await response.json();
+  //       setThreadId(jsonResponse.thread_id);
+  //     } catch (error) {
+  //       console.error("Failed to start thread:", error);
+  //     }
+  //   };
+
+  //   startThread();
+  // }, []);
+  useEffect(() => {
+    const loadThreads = async () => {
+      const fetchedThreads = await fetchThreads();
+      setThreads(fetchedThreads);
+      if (fetchedThreads.length > 0) {
+        setThreadId(fetchedThreads[0]); // Set the most recent thread as default
+      } else {
+        startNewThread();
+      }
+    };
+    loadThreads();
+  }, []);
+  
+  const setThreadIdManually = (id) => {
+    setThreadId(id);
+    loadConversationHistory(id);
+  };
+  
+  // Add this function if you want to load conversation history
+  const loadConversationHistory = async (id) => {
+    try {
+      const response = await fetch(`${backendUrl}/messages/${id}`);
+      if (!response.ok) {
+        throw new Error(`HTTP status ${response.status}`);
+      }
+      const jsonResponse = await response.json();
+      setMessages(jsonResponse.messages);
+    } catch (error) {
+      console.error("Failed to load conversation history:", error);
+    }
+  };
+  const startNewThread = async () => {
+    try {
+      const response = await fetch(`${backendUrl}/start`, {
+        method: "POST",
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP status ${response.status}`);
+      }
+      const jsonResponse = await response.json();
+      setThreadId(jsonResponse.thread_id);
+      setThreads(prevThreads => [...prevThreads, jsonResponse.thread_id]);
+    } catch (error) {
+      console.error("Failed to start thread:", error);
+    }
+  };
 
   const chat = async (userMessage) => {
+    if (!threadId) {
+      console.error('Thread ID not set.');
+      return;
+    }
+
     setLoading(true);
     // Add the user's message to the messages state
     setMessages((previousMessages) => [
@@ -25,7 +100,7 @@ export const ChatProvider = ({ children }) => {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ message: userMessage }),
+        body: JSON.stringify({ message: userMessage, thread_id: threadId }),
       });
 
       if (!response.ok) {
@@ -38,8 +113,6 @@ export const ChatProvider = ({ children }) => {
       const aiMessage = {
         text: jsonResponse.reply,
         audio: jsonResponse.audio,
-        animation: jsonResponse.animation,
-        facialExpression: jsonResponse.facialExpression,
         author: 'ai'
       };
 
@@ -50,7 +123,6 @@ export const ChatProvider = ({ children }) => {
         audio.play();
         audio.onended = () => {
           setLoading(false);
-          // Reset avatar state or perform any other necessary cleanup
           setMessage(null);
         };
       } else {
@@ -60,6 +132,20 @@ export const ChatProvider = ({ children }) => {
     } catch (error) {
       console.error("Failed to chat:", error);
       setLoading(false);
+    }
+  };
+
+  const fetchThreads = async () => {
+    try {
+      const response = await fetch(`${backendUrl}/threads`);
+      if (!response.ok) {
+        throw new Error(`HTTP status ${response.status}`);
+      }
+      const jsonResponse = await response.json();
+      return jsonResponse.thread_ids;
+    } catch (error) {
+      console.error("Failed to fetch threads:", error);
+      return [];
     }
   };
 
@@ -91,26 +177,34 @@ export const ChatProvider = ({ children }) => {
       setMessage(null);
     }
   }, [messages]);
+  useEffect(() => {
+    setMessages([]); // Clear messages when thread changes
+  }, [threadId]);
 
   return (
     <ChatContext.Provider
-      value={{
-        chat,
-        message,
-        setMessage,
-        messages,
-        setMessages,
-        loading,
-        setLoading,
-        cameraZoomed,
-        setCameraZoomed,
-        startVoiceRecognition,
-        selectedLanguage,
-        setSelectedLanguage,
-      }}
-    >
-      {children}
-    </ChatContext.Provider>
+  value={{
+    chat,
+    message,
+    setMessage,
+    messages,
+    setMessages,
+    loading,
+    setLoading,
+    cameraZoomed,
+    setCameraZoomed,
+    startVoiceRecognition,
+    selectedLanguage,
+    setSelectedLanguage,
+    threadId,
+    setThreadId,
+    threads,
+    startNewThread,
+    setThreadIdManually,
+  }}
+>
+  {children}
+</ChatContext.Provider>
   );
 };
 
