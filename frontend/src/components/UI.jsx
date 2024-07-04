@@ -1,8 +1,10 @@
-import { useRef } from "react";
+
 import { useChat } from "../hooks/useChat";
+import { useRef, useState } from "react";
 
 export const UI = ({ hidden, ...props }) => {
   const input = useRef();
+  const [inputThreadId, setInputThreadId] = useState('');
   const {
     chat,
     loading,
@@ -13,11 +15,16 @@ export const UI = ({ hidden, ...props }) => {
     selectedLanguage,
     setSelectedLanguage,
     messages,
+    threadId,
+    setThreadId,
+    threads,
+    startNewThread,
+    setThreadIdManually,
   } = useChat();
 
   const sendMessage = () => {
     const text = input.current.value;
-    if (!loading && !message) {
+    if (!loading && !message && threadId) {
       chat(text);
       input.current.value = "";
     }
@@ -33,10 +40,63 @@ export const UI = ({ hidden, ...props }) => {
 
   return (
     <>
-      <div className="fixed top-0 left-0 right-0 bottom-0 z-10 flex flex-col justify-between p-4 pointer-events-none">
-        <div className="self-start backdrop-blur-md bg-white bg-opacity-50 p-4 rounded-lg">
-          <h1 className="font-black text-xl">BitHabit</h1>
-          <p>BitHabit Avatar</p>
+      <div className="fixed top-0 left-0 right-0 bottom-0 z-10 flex flex-col justify-between p-4">
+  <div className="self-start backdrop-blur-md bg-white bg-opacity-50 p-4 rounded-lg pointer-events-auto">
+    <h1 className="font-black text-xl">BitHabit</h1>
+    <p>BitHabit Avatar</p>
+    <div className="flex flex-col items-start gap-2 w-full mt-2">
+      <div className="flex items-center gap-2 w-full">
+        <input
+          type="text"
+          value={inputThreadId}
+          onChange={(e) => setInputThreadId(e.target.value)}
+          placeholder="Enter Thread ID"
+          className="p-2 rounded-md bg-opacity-50 bg-white backdrop-blur-md flex-grow"
+        />
+        <button
+          onClick={() => {
+            if (inputThreadId) {
+              setThreadIdManually(inputThreadId);
+              setInputThreadId(''); // Clear the input after setting
+            }
+          }}
+          // className="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-md"
+          className="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-md whitespace-nowrap"
+        >
+          Set Thread ID
+        </button>
+      </div>
+      
+        <select
+          id="thread-select"
+          onChange={(e) => setThreadId(e.target.value)}
+          value={threadId || ''}
+          className="p-2 rounded-md bg-opacity-50 bg-white backdrop-blur-md flex-grow"
+        >
+          <option value="">Select a thread</option>
+          {threads.map((id) => (
+            <option key={id} value={id}>{id}...</option>
+          ))}
+        </select>
+        <div className="flex items-center gap-2 w-full">
+        <button
+          onClick={startNewThread}
+          className="bg-pink-500 hover:bg-pink-600 text-white p-2 rounded-md"
+        >
+          New Thread
+        </button>
+        <button
+          onClick={() => navigator.clipboard.writeText(threadId)}
+          className="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-md"
+        >
+          Copy ID
+        </button>
+      </div>
+      <div>Current Thread ID: {threadId || 'None'}</div>
+
+
+  {/* ... existing language selection and speak button ... */}
+</div>
         </div>
         <div className="absolute bottom-0 left-0 right-0 p-4 pointer-events-auto flex flex-col items-center gap-4">
           <div className="flex flex-col items-center gap-2 w-full max-w-md mx-auto mb-4">
@@ -143,6 +203,7 @@ export const UI = ({ hidden, ...props }) => {
           </button>
         </div>
       </div>
+      
       {/* Chat History */}
       <div className="fixed top-24 right-20 bottom-20 w-96 bg-white bg-opacity-50 backdrop-blur-md rounded-lg p-4 overflow-y-auto shadow-lg z-10">
         <h2 className="text-xl font-bold mb-4">Chat History</h2>
